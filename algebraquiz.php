@@ -17,13 +17,42 @@ if (!$conn) {
 
 $studentusername = $_SESSION['username'];
 
-if (!isset($_SESSION['id'])) {
-    $_SESSION['id'] = 1; // Initialize to first question if not set
-}
+// Fetch the student's level from the student_details table
+$query_level = "SELECT * FROM studentdetails WHERE username='$studentusername'";
+$result_level = mysqli_query($conn, $query_level);
+$student_level = mysqli_fetch_assoc($result_level)['S_Level'];
 
 $query7 = "SELECT * FROM studentdetails WHERE username='$studentusername'";
 $result7 = mysqli_query($conn, $query7);
 $studentname = mysqli_fetch_assoc($result7)['SName'];
+
+if ($result_level && mysqli_num_rows($result_level) > 0) {
+    //$student_level = mysqli_fetch_assoc($result_level)['S_Level'];
+} else {
+    die("Error retrieving student level.");
+}
+
+// Set up the question query based on the student's level
+if ($student_level == 'New') {
+    // The original logic is used for 'New' students, so don't modify it
+    $sql = "SELECT * FROM questions";
+} elseif ($student_level == 'Weak') {
+    // For 'Weak' students, select 10 random easy questions
+    $sql = "SELECT DISTINCT * FROM questions_full WHERE category='Easy' ORDER BY RAND() LIMIT 10";
+} elseif ($student_level == 'Bright') {
+    // For 'Bright' students, select 10 random hard questions
+    $sql = "SELECT DISTINCT* FROM questions_full WHERE category='Hard' ORDER BY RAND() LIMIT 10";
+} elseif ($student_level == 'Average') {
+    // For 'Average' students, select 10 random questions from any difficulty
+    $sql = "SELECT DISTINCT* FROM questions_full ORDER BY RAND() LIMIT 10";
+}
+
+// Execute the query to fetch the questions
+$result = mysqli_query($conn, $sql);
+
+if (!isset($_SESSION['id'])) {
+    $_SESSION['id'] = 1; // Initialize to first question if not set
+}
 
 // Initialize timer if not already set
 if (!isset($_SESSION['start_time'])) {
@@ -69,9 +98,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
+
 // Query to fetch questions from the database
-$sql = "SELECT * FROM questions";
-$result = mysqli_query($conn, $sql);
+//$sql = "SELECT * FROM questions";
+//$result = mysqli_query($conn, $sql);
 
 // Display questions
 if (mysqli_num_rows($result) > 0) {
