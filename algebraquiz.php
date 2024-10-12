@@ -41,11 +41,12 @@ if ($student_level == 'New') {
     $sql = "SELECT DISTINCT * FROM questions_full WHERE category='Easy' ORDER BY RAND() LIMIT 10";
 } elseif ($student_level == 'Bright') {
     // For 'Bright' students, select 10 random hard questions
-    $sql = "SELECT DISTINCT* FROM questions_full WHERE category='Hard' ORDER BY RAND() LIMIT 10";
+    $sql = "SELECT DISTINCT * FROM questions_full WHERE category='Hard' ORDER BY RAND() LIMIT 10";
 } elseif ($student_level == 'Average') {
     // For 'Average' students, select 10 random questions from any difficulty
-    $sql = "SELECT DISTINCT* FROM questions_full ORDER BY RAND() LIMIT 10";
+    $sql = "SELECT DISTINCT * FROM questions_full ORDER BY RAND() LIMIT 10";
 }
+
 
 // Execute the query to fetch the questions
 $result = mysqli_query($conn, $sql);
