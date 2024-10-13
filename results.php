@@ -84,22 +84,70 @@ if (mysqli_num_rows($result_student_answers) > 0) {
 $time_taken = isset($_SESSION['start_time']) ? time() - $_SESSION['start_time'] : 0;
 $finished_on_time = !$timeout ? 'Yes' : 'No';
 
-// Determine the student level
-$sql_level = "SELECT S_Level FROM student_level_identifier WHERE Finished_on_Time = '$finished_on_time' AND Easy_count = '$easy_count' AND Medium_count = '$medium_count' AND Hard_count = '$hard_count'";
+$sql_level = "SELECT S_Level FROM studentdetails WHERE username = '$studentusername'";
 $result_level = mysqli_query($conn, $sql_level);
 
-$student_level = 'Not Determined'; // Default in case no matching level is found
+$student_level = 'Normal'; // Default level for students
+// Check if the query returned a result
 if (mysqli_num_rows($result_level) > 0) {
-    $student_level = mysqli_fetch_assoc($result_level)['S_Level'];
+    // Fetch the current level
+    $current_level = mysqli_fetch_assoc($result_level)['S_Level'];
+}
+
+if ($current_level == 'New') {
+
+    // Determine the student level
+    $sql_level = "SELECT S_Level FROM student_level_identifier WHERE Finished_on_Time = '$finished_on_time' AND Easy_count = '$easy_count' AND Medium_count = '$medium_count' AND Hard_count = '$hard_count'";
+    $result_level = mysqli_query($conn, $sql_level);
+
+    $student_level = 'Not Determined'; // Default in case no matching level is found
+    if (mysqli_num_rows($result_level) > 0) {
+        $student_level = mysqli_fetch_assoc($result_level)['S_Level'];
+    }
+}
+
+// Update the Last_General_Quiz_Mark for students who are new
+if ($student_level !== 'Not Determined') {
+    $sql_update_quiz_mark = "UPDATE studentdetails SET Last_General_Quiz_Mark = '$correct_count' WHERE username = '$studentusername' AND S_Level = 'New'";
+    if (!mysqli_query($conn, $sql_update_quiz_mark)) {
+        echo "Error updating quiz mark: " . mysqli_error($conn);
+    }
+}
+
+//Determine number of practice quizes
+$sql_level = "SELECT Practice_Quiz FROM studentdetails WHERE username = '$studentusername'";
+$result_level = mysqli_query($conn, $sql_level);
+
+// Check if the query returned a result
+if (mysqli_num_rows($result_level) > 0) {
+    // Fetch the current Practice_Quiz value
+    $practice_quiz = mysqli_fetch_assoc($result_level)['Practice_Quiz'];
+    
+    // Increment the Practice_Quiz value by 1
+    $new_practice_quiz = $practice_quiz + 1;
+    
+
+    // Update the table with the new value
+    $sql_update = "UPDATE studentdetails SET Practice_Quiz = $new_practice_quiz WHERE username = '$studentusername' AND S_Level != 'New'";
+    
+    // Execute the update query
+    if (mysqli_query($conn, $sql_update)) {
+        //echo "Practice quiz count updated successfully!";
+    } else {
+        echo "Error updating practice quiz count: " . mysqli_error($conn);
+    }
+} else {
+    echo "No record found for the specified username.";
 }
 
 // Update the student_details table with the determined level
 if ($student_level !== 'Not Determined') {
-    $sql_update_level = "UPDATE studentdetails SET S_Level = '$student_level' WHERE username = '$studentusername'";
+    $sql_update_level = "UPDATE studentdetails SET S_Level = '$student_level' WHERE username = '$studentusername' AND S_Level = 'New'";
     if (!mysqli_query($conn, $sql_update_level)) {
         echo "Error updating student level: " . mysqli_error($conn);
     }
 }
+
 
 // Close connection
 mysqli_close($conn);
@@ -220,6 +268,9 @@ mysqli_close($conn);
         .weak-message {
             color: #ff4500;
         }
+        .normal-message {
+            color: #1e90ff;
+        }
         .hidden {
             display: none;
         }
@@ -255,6 +306,10 @@ mysqli_close($conn);
     <div id="weak-message" class="message weak-message hidden">
         💪 Don't give up! You can do this!<br>
         Keep trying, and you'll improve with every step! 🌱
+    </div>
+    <div id="normal-message" class="message normal-message hidden">
+        👍 Good work! You're doing great!<br>
+        Keep practicing! 🌟
     </div>
 
     <div class="container">
@@ -298,6 +353,8 @@ mysqli_close($conn);
                 document.getElementById('average-message').classList.remove('hidden');
             } else if (studentLevel === 'Weak') {
                 document.getElementById('weak-message').classList.remove('hidden');
+            } else if (studentLevel === 'Normal') {
+                document.getElementById('normal-message').classList.remove('hidden');
             }
 
             setTimeout(function() {
@@ -305,6 +362,7 @@ mysqli_close($conn);
                 document.getElementById('congrats-message').classList.add('hidden'); // Hide congrats message
                 document.getElementById('average-message').classList.add('hidden'); // Hide average message
                 document.getElementById('weak-message').classList.add('hidden'); // Hide weak message
+                document.getElementById('normal-message').classList.add('hidden'); // Hide normal message
                 document.querySelector('.container').style.display = 'block'; // Show results
             }, 5000); // Adjust time to match animation length for balloons
         };
